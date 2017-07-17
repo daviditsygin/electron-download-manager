@@ -10,6 +10,8 @@ let lastWindowCreated;
 
 let queue = [];
 
+var gListener;
+
 function _registerListener(win, opts = {}, cb = () => {}) {
 
     lastWindowCreated = win;
@@ -67,7 +69,9 @@ function _registerListener(win, opts = {}, cb = () => {}) {
         });
     };
 
-    win.webContents.session.on('will-download', listener);
+    gListener = listener
+
+
 }
 
 var register = (opts = {}) => {
@@ -138,7 +142,10 @@ var download = (options, callback) => {
 }
 
 var bulkDownload = (options, callback) => {
-
+  console.log('started')
+  let win = BrowserWindow.getFocusedWindow() || lastWindowCreated;
+    win.webContents.session.on('will-download', gListener);
+    console.log('registered listener')
     options = Object.assign({}, {
         urls: [],
         path: ""
@@ -164,6 +171,7 @@ var bulkDownload = (options, callback) => {
             let finishedCount = finished.length;
 
             if ((finishedCount + errorsCount) == urlsCount) {
+                win.webContents.session.removeListener('will-download', gListener);
                 if (errorsCount > 0) {
                     callback(new Error(errorsCount + " downloads failed"), finished, errors);
                 } else {
